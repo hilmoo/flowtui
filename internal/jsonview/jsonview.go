@@ -27,6 +27,10 @@ type Options struct {
 	MaxString int
 	// Color enables ANSI colors.
 	Color bool
+	// OnTruncate, if set, is called for every truncated string with the exact
+	// visible marker text shown instead of the value and the full (JSON-escaped
+	// when it appears inside JSON) text it stands for.
+	OnTruncate func(marker, full string)
 }
 
 var (
@@ -131,6 +135,10 @@ func (p *printer) str(s string) string {
 	if p.o.MaxString > 0 && n > p.o.MaxString {
 		prev := string([]rune(s)[:previewRunes])
 		q := quote(prev)
+		if p.o.OnTruncate != nil {
+			full := quote(s)
+			p.o.OnTruncate(q[1:len(q)-1]+fmt.Sprintf("… (%d chars)", n), full[1:len(full)-1])
+		}
 		return p.paint(strStyle, q[:len(q)-1]) + p.paint(moreStyle, fmt.Sprintf("… (%d chars)", n)) + p.paint(strStyle, `"`)
 	}
 	return p.paint(strStyle, quote(s))
@@ -176,7 +184,11 @@ func Body(raw []byte, o Options) (out string, ok bool) {
 func truncText(s string, o Options) string {
 	n := runeCount(s)
 	if o.MaxString > 0 && n > o.MaxString {
-		return string([]rune(s)[:previewRunes]) + fmt.Sprintf("… (%d chars)", n)
+		marker := string([]rune(s)[:previewRunes]) + fmt.Sprintf("… (%d chars)", n)
+		if o.OnTruncate != nil {
+			o.OnTruncate(marker, s)
+		}
+		return marker
 	}
 	return s
 }

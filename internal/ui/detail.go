@@ -3,6 +3,7 @@ package ui
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -31,8 +32,8 @@ func section(title string) string {
 }
 
 // requestDetail builds the unwrapped detail text of one request.
-func requestDetail(r history.Record, full bool) string {
-	o := jsonview.Options{Color: true}
+func requestDetail(r history.Record, full bool, onTrunc func(marker, full string)) string {
+	o := jsonview.Options{Color: true, OnTruncate: onTrunc}
 	if !full {
 		o.MaxString = jsonview.DefaultMaxString
 	}
@@ -86,7 +87,7 @@ func consoleDetail(res runner.Result) string {
 func DetailContent(res runner.Result, sel int, full bool, width int) string {
 	var s string
 	if sel >= 0 && sel < len(res.Requests) {
-		s = requestDetail(res.Requests[sel], full)
+		s = requestDetail(res.Requests[sel], full, nil)
 	} else {
 		s = consoleDetail(res)
 	}
@@ -100,4 +101,23 @@ func plainJSON(raw json.RawMessage) string {
 		return ""
 	}
 	return s
+}
+
+// expandTruncated replaces truncation markers in copied text with the full
+// strings they stand for. Markers may have been split across lines by wrapping.
+func expandTruncated(text string, res runner.Result, sel int) string {
+	if sel < 0 || sel >= len(res.Requests) {
+		return text
+	}
+	requestDetail(res.Requests[sel], false, func(marker, full string) {
+		var re strings.Builder
+		for _, r := range marker {
+			re.WriteString(regexp.QuoteMeta(string(r)) + `
+?`)
+		}
+		if rx, err := regexp.Compile(re.String()); err == nil {
+			text = rx.ReplaceAllLiteralString(text, full)
+		}
+	})
+	return text
 }

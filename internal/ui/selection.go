@@ -151,6 +151,11 @@ func (m Model) handleMouse(msg tea.Msg) (_ Model, cmd tea.Cmd, handled bool) {
 			return m, nil, true
 		}
 		txt := m.sel.text(m.content())
+		if m.screen == screenResults && m.running == nil {
+			if !m.results.full {
+				txt = expandTruncated(txt, m.results.res, m.results.sel)
+			}
+		}
 		if txt == "" {
 			return m, nil, true
 		}
