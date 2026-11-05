@@ -139,8 +139,12 @@ shows flow name, request count and the visible line range (`lines 12-20/58`).
 - Width < 80, Picker (assumption): the list only; the source preview is hidden.
 
 Mouse (cell-motion) and the alternate screen are enabled, and restored on
-exit. Because the mouse is captured, **hold Shift while dragging** (Option on
-some macOS terminals) to select text.
+exit. Because the mouse is captured, flowtui does its own text selection:
+**drag with the left button** to highlight text; on release it is copied to the
+clipboard (OSC 52, so the terminal must support it). Any key clears the
+highlight. Selection is by screen rows/columns, so it spans both panes when
+they are side by side. Holding Shift (Option on some macOS terminals) still
+gives native terminal selection.
 
 ## Layout
 

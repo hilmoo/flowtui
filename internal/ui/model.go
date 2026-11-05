@@ -55,6 +55,7 @@ type Model struct {
 	spin    spinner.Model
 	help    help.Model
 	status  string
+	sel     selection
 }
 
 // New builds the model. root is the directory flows and files are relative to.
@@ -96,6 +97,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case runDoneMsg:
 		return m.finishRun(msg)
+	}
+
+	if nm, cmd, ok := m.handleMouse(msg); ok {
+		return nm, cmd
+	}
+	if _, ok := msg.(tea.KeyPressMsg); ok {
+		m.sel = selection{} // any key clears the highlight
 	}
 
 	if m.running != nil {
@@ -228,6 +236,14 @@ func (m Model) export() string {
 
 // View implements tea.Model.
 func (m Model) View() tea.View {
+	v := tea.NewView(m.sel.highlight(m.content()))
+	v.AltScreen = true
+	v.MouseMode = tea.MouseModeCellMotion
+	return v
+}
+
+// content renders the whole screen without selection highlighting.
+func (m Model) content() string {
 	var header, body string
 	var km help.KeyMap
 	switch {
@@ -257,10 +273,7 @@ func (m Model) View() tea.View {
 		body,
 		ansi.Truncate(footer, m.w, "…"),
 	}
-	v := tea.NewView(strings.Join(lines, "\n"))
-	v.AltScreen = true
-	v.MouseMode = tea.MouseModeCellMotion
-	return v
+	return strings.Join(lines, "\n")
 }
 
 // Screen reports the active screen (used by tests).
