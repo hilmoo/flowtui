@@ -1,0 +1,9 @@
+{
+  "flowsDir": "flows",
+  "glob": "**/*.flow.sh",
+  "command": ["sh", "{file}"],
+  "historyFile": "out/history.jsonl",
+  "extraActions": [
+    { "label": "[say hi]", "command": ["sh", "-c", "echo hi from an extra action"] }
+  ]
+}
